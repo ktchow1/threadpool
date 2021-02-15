@@ -18,7 +18,7 @@
 // S = sync_condvar      work, slower speed 
 // ****************************************************************************************** //
 template<std::invocable T, 
-         template<typename> typename Q = YLib::mutex_locked_queue,  
+         template<typename> typename Q = locked_queue,  
          typename S = sync_psemaphore>       
 class threadpool
 {

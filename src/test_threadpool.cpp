@@ -101,13 +101,13 @@ void test_threadpool()
     for(std::uint32_t n=0; n!=100; ++n)
     {
         std::cout << "\n****** TEST " << n << " ******";
-        test_threadpool_impl<YLib::lockfree_queue_long> ("lockfree_queue_long", 10);
-        test_threadpool_impl<YLib::lockfree_queue_short>("lockfree_queue_short",10);
-        test_threadpool_impl<YLib::mutex_locked_queue>  ("mutex_locked_queue",  10);
-        test_threadpool_impl<YLib::spin_locked_queue>   ("spin_locked_queue",   10);
-        test_threadpool_impl<YLib::lockfree_queue_long> ("lockfree_queue_long",  0);
-        test_threadpool_impl<YLib::lockfree_queue_short>("lockfree_queue_short", 0);
-        test_threadpool_impl<YLib::mutex_locked_queue>  ("mutex_locked_queue",   0);
-        test_threadpool_impl<YLib::spin_locked_queue>   ("spin_locked_queue",    0);
+        test_threadpool_impl<lockfree_queue_long> ("lockfree_queue_long", 10);
+        test_threadpool_impl<lockfree_queue_short>("lockfree_queue_short",10);
+        test_threadpool_impl<mutex_locked_queue>  ("mutex_locked_queue",  10);
+        test_threadpool_impl<spin_locked_queue>   ("spin_locked_queue",   10);
+        test_threadpool_impl<lockfree_queue_long> ("lockfree_queue_long",  0);
+        test_threadpool_impl<lockfree_queue_short>("lockfree_queue_short", 0);
+        test_threadpool_impl<mutex_locked_queue>  ("mutex_locked_queue",   0);
+        test_threadpool_impl<spin_locked_queue>   ("spin_locked_queue",    0);
     }
 }
