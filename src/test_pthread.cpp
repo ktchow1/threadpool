@@ -44,7 +44,7 @@ void* thread_fct(void* arg)
     clock_gettime(CLOCK_MONOTONIC, &ts0);
     set_this_thread_affinity(data_ptr->id);
     clock_gettime(CLOCK_MONOTONIC, &ts1);
-    set_this_thread_priority(SCHED_RR);
+    set_this_thread_policy(SCHED_RR);
     clock_gettime(CLOCK_MONOTONIC, &ts2);
 
     data_ptr->aff_ns = to_nanosec(ts1) - to_nanosec(ts0);

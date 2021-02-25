@@ -40,6 +40,7 @@ private:
 };
 
 
+namespace YLib {
 template<typename T, typename LOCK> class locked_queue final
 {
 public:
@@ -73,6 +74,23 @@ public:
         return std::make_optional(output);
     }
 
+    // *** boost::lockfree interface *** //
+    bool push(const T& item) noexcept
+    {
+        return emplace(item);
+    }
+
+    bool pop(T& item) noexcept
+    {
+        auto result = pop();
+        if (result)
+        {
+            item = std::move(*result); 
+            return true;
+        }
+        else return false;
+    }
+
 public:
     std::uint32_t peek_size() const noexcept
     {
@@ -89,5 +107,6 @@ template<typename T>
 using mutex_locked_queue = locked_queue<T, std::mutex>;
 template<typename T>
 using spin_locked_queue = locked_queue<T, spinlock>;
+}
 
 #endif

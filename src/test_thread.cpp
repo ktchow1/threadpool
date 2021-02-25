@@ -122,7 +122,7 @@ auto synchronization_with_atomic(std::uint32_t cpu0, std::uint32_t cpu1)
     std::thread reactor([&]()
     {
         set_this_thread_affinity(cpu0);        
-        set_this_thread_priority(SCHED_FIFO);        
+        set_this_thread_policy(SCHED_FIFO);        
         for(std::uint32_t n=0; n!=N; ++n)
         {
             while(trigger.load()!=n+1) 
@@ -139,7 +139,7 @@ auto synchronization_with_atomic(std::uint32_t cpu0, std::uint32_t cpu1)
     // *** Initiator *** //
     // ***************** //
     set_this_thread_affinity(cpu1);        
-    set_this_thread_priority(SCHED_FIFO);        
+    set_this_thread_policy(SCHED_FIFO);        
     for(std::uint32_t n=0; n!=N; ++n)
     {
         clock_gettime(CLOCK_MONOTONIC, &ts0);

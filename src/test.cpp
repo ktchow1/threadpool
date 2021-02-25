@@ -1,9 +1,11 @@
 
 #include<iostream>
-#include<sync_test.h>
+#include<latency_test.h>
 
+void test_epoll();
 void test_invocable();
 void test_unlock_mutex_in_another_thread();
+
 
 // *** Time thread *** //
 void timer_resolution();
@@ -13,6 +15,7 @@ void time_mutex_lock_and_unlock();
 void time_synchronization_with_atomic();     
 void test_pthread_affinity_and_priority();
 
+
 // *** Time wakeup *** //
 void time_wakeup_mutex(std::uint32_t waiting_in_us);  
 void time_wakeup_pmutex(std::uint32_t waiting_in_us);  
@@ -21,14 +24,16 @@ void time_wakeup_condvar(std::uint32_t waiting_in_us);
 void time_wakeup_promfut(std::uint32_t waiting_in_us);
 void test_semaphore();
 
-// *** Threadpool *** //
+
+// *** Others *** //
 void test_threadpool();
-
-
+void test_lockfree();
+void test_coroutine();
 
 
 int main(int argc, char* argv[])
 {
+//  test_epoll();
 //  test_invocable();
 //  test_unlock_mutex_in_another_thread();
   
@@ -49,21 +54,22 @@ int main(int argc, char* argv[])
     // ******************* //
     // *** Time wakeup *** //
     // ******************* //
-    constexpr std::uint32_t NumTest = 10000;
-//  for(std::uint32_t us : {0,10,100,1000,10000}) 
-    for(std::uint32_t us : {10})
-    {
-        sync_test<sync_futex>("futex", NumTest, us);                              // 1700 ns
-        sync_test<sync_mutex>("std mutex", NumTest, us);                          // 1700 ns
-        sync_test<sync_pmutex>("posix mutex", NumTest, us);                       // 1700 ns
-        sync_test<sync_pmutex2>("posix mutex2", NumTest, us);                     // ?
-    //  sync_test<sync_semaphore>("std semaphore", NumTest, us);                  // ?
-        sync_test<sync_psemaphore>("posix semaphore", NumTest, us);               // 1700 ns
-        sync_test<sync_condvar>("condition variable", NumTest, us);               // 2200 ns
-        sync_test<sync_promfut<NumTest>>("promise and future", NumTest, us);      // 2200 ns
-    }   
+/*  std::uint32_t NumTest = 10000;
+    std::uint32_t us = 10;
+
+    sync_test<sync_futex>("futex", NumTest, us);                              // 1700 ns
+    sync_test<sync_mutex>("std mutex", NumTest, us);                          // 1700 ns
+    sync_test<sync_pmutex>("posix mutex", NumTest, us);                       // 1700 ns
+    sync_test<sync_HansBarz>("posix HansBarz", NumTest, us);                  // 1700 ns
+//  sync_test<sync_semaphore>("std semaphore", NumTest, us);                  // ?
+    sync_test<sync_psemaphore>("posix semaphore", NumTest, us);               // 1700 ns
+    sync_test<sync_condvar>("condition variable", NumTest, us);               // 2200 ns
+    sync_test<sync_promfut<NumTest>>("promise and future", NumTest, us);      // 2200 ns
+*/
 //  test_semaphore();
-    test_threadpool(); 
+//  test_threadpool(); 
+//  test_lockfree();    
+    test_coroutine();
 
 
     // ********************************************************************************************************* //

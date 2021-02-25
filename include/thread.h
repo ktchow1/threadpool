@@ -16,6 +16,10 @@
  *  policy         =  SCHED_RR / SCHED_FIFO 
  */
 
+
+// **************** //
+// *** Affinity *** //
+// **************** //
 inline void set_thread_affinity(auto thread_handle, const std::vector<std::uint32_t>& affinity)
 {
     cpu_set_t cpuset;
@@ -46,7 +50,22 @@ inline void set_this_thread_affinity(std::uint32_t affinity)
     set_thread_affinity(pthread_self(), affinity);
 }
 
-inline void set_thread_priority(auto thread_handle, auto policy) 
+// ***************************** //
+// *** Priority (nice value) *** //
+// ***************************** //
+inline bool set_this_thread_priority() 
+{
+    if (setpriority(PRIO_PROCESS, 0, -20) < 0)
+    {
+        return false;
+    }
+    return true;
+}
+
+// ************** //
+// *** Policy *** //
+// ************** //
+inline void set_thread_policy(auto thread_handle, auto policy) 
 {
     struct sched_param sp;
     sp.sched_priority = sched_get_priority_max(policy);
@@ -58,9 +77,9 @@ inline void set_thread_priority(auto thread_handle, auto policy)
     }   
 }
 
-inline void set_this_thread_priority(auto policy) 
+inline void set_this_thread_policy(auto policy) 
 {
-    set_thread_priority(pthread_self(), policy);
+    set_thread_policy(pthread_self(), policy);
 }
 
 #endif

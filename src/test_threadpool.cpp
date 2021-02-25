@@ -34,7 +34,7 @@ struct task
         res->tid = std::this_thread::get_id();
         res->ns_response = to_nanosec(ts_response) - to_nanosec(ts_emplace);
 
-        const std::uint32_t N = 500;
+        const std::uint32_t N = 1000;
         double s = (1+x/N);
 
         timespec ts0;
@@ -66,21 +66,27 @@ struct task
 template<template<typename> typename QUEUE>
 void test_threadpool_impl(const std::string& label, std::uint32_t waiting_in_us)
 {
-    std::uint32_t num_trials = 10000;
+    std::uint32_t num_trials = 50000;
     std::vector<result> results;
     results.resize(num_trials);
 
     {
-        threadpool<task, QUEUE> pool(4, {1,2});
+        threadpool<task, QUEUE> pool(8, {1,2});
         for(std::uint32_t n=0; n!=num_trials; ++n)
         {
             double r = rand() % 1000 / 200.0;
-            pool.emplace_task(now(), r, &results[n]);
+            auto time = now();
+            while(!pool.emplace_task(time, r, &results[n])) 
+            {
+                std::this_thread::yield();
+            }
+
             if (waiting_in_us > 0)
             {
                 std::this_thread::sleep_for(std::chrono::microseconds(waiting_in_us));
             }
         }
+        pool.stop();
     }
 
     statistics<std::uint64_t> stat; 
@@ -98,16 +104,22 @@ void test_threadpool_impl(const std::string& label, std::uint32_t waiting_in_us)
 
 void test_threadpool()
 {
-    for(std::uint32_t n=0; n!=100; ++n)
+    std::uint32_t N=3;
+    for(std::uint32_t n=0; n!=N; ++n)
     {
-        std::cout << "\n****** TEST " << n << " ******";
-        test_threadpool_impl<lockfree_queue_long> ("lockfree_queue_long", 10);
-        test_threadpool_impl<lockfree_queue_short>("lockfree_queue_short",10);
-        test_threadpool_impl<mutex_locked_queue>  ("mutex_locked_queue",  10);
-        test_threadpool_impl<spin_locked_queue>   ("spin_locked_queue",   10);
-        test_threadpool_impl<lockfree_queue_long> ("lockfree_queue_long",  0);
-        test_threadpool_impl<lockfree_queue_short>("lockfree_queue_short", 0);
-        test_threadpool_impl<mutex_locked_queue>  ("mutex_locked_queue",   0);
-        test_threadpool_impl<spin_locked_queue>   ("spin_locked_queue",    0);
+        std::cout << "\n************";
+        std::cout << "\n*** TEST *** " << n;
+        std::cout << "\n************";
+
+        test_threadpool_impl<YLib::lockfree_queue_long> ("lockfree_queue_long", 10);
+        test_threadpool_impl<YLib::lockfree_queue_short>("lockfree_queue_short",10);
+        test_threadpool_impl<YLib::mutex_locked_queue>  ("mutex_locked_queue",  10);
+        test_threadpool_impl<YLib::spin_locked_queue>   ("spin_locked_queue",   10);
+
+        // More contention 
+        test_threadpool_impl<YLib::lockfree_queue_long> ("lockfree_queue_long",  0);
+        test_threadpool_impl<YLib::lockfree_queue_short>("lockfree_queue_short", 0); 
+        test_threadpool_impl<YLib::mutex_locked_queue>  ("mutex_locked_queue",   0);
+        test_threadpool_impl<YLib::spin_locked_queue>   ("spin_locked_queue",    0);
     }
 }

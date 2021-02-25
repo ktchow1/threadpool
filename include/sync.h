@@ -15,6 +15,13 @@
 #include<sys/time.h> 
 
 
+template<typename T> 
+concept sync_primitive = requires(T x)
+{
+    x.wait();
+    x.notify();
+};
+
 // ********************************* //
 // *** Implementation with futex *** //
 // ********************************* //
@@ -35,21 +42,19 @@ public:
 public: 
     void wait()
     {
-        // Potential hazard for mpmc scenario, the following 2 steps are not atomic.
         syscall(SYS_futex, &futex, FUTEX_WAIT, blocking_value, NULL, NULL, 0); 
-        futex.fetch_sub(1);
+        ++blocking_value;
     }
 
     void notify()
     {
-        // Potential hazard for mpmc scenario, the following 2 steps are not atomic.
         futex.fetch_add(1);
         syscall(SYS_futex, &futex, FUTEX_WAKE, 1, NULL, NULL, 0); 
     }
 
 private:
     std::atomic<std::int32_t> futex;
-    const std::int32_t blocking_value;
+    std::int32_t blocking_value;
 };
 
 // ******************************************************** //
@@ -126,77 +131,73 @@ private:
     pthread_mutex_t mutex;
 };
 
-// *********************************************************** //
-// *** Implementation with pthread mutex (multi consumers) *** //
-// *********************************************************** //
-class sync_pmutex2  
+// ******************************************************** //
+// *** Implementation with pthread mutex (Hans W. Barz) *** //
+// ******************************************************* //
+// 1. count is protected by cs_mutex, hence its inc/dec are atomic
+// 2. waiting threads on P are waked either by :
+// -- other threads completing P and count N->N-1, where N>1
+// -- other threads completing V and count 0->1
+// ******************************************************* //
+class sync_HansBarz  
 {
 public:
-    sync_pmutex2() : count(0)
+    sync_HansBarz() : count(0)
     {
-        pthread_mutex_init(&count_mutex, NULL);
-        pthread_mutex_init(&signal_mutex, NULL);
-        pthread_mutex_lock(&signal_mutex);
+        pthread_mutex_init(&cs_mutex, NULL);
+        pthread_mutex_init(&pv_mutex, NULL);
+        pthread_mutex_lock(&pv_mutex);
     }
 
-   ~sync_pmutex2() 
+   ~sync_HansBarz() 
     {
-        pthread_mutex_unlock (&signal_mutex);
-        pthread_mutex_destroy(&signal_mutex);
-        pthread_mutex_destroy(& count_mutex);
+        pthread_mutex_unlock (&pv_mutex);
+        pthread_mutex_destroy(&pv_mutex);
+        pthread_mutex_destroy(&cs_mutex);
     }
 
-    sync_pmutex2(const sync_pmutex2&) = delete;
-    sync_pmutex2(sync_pmutex2&&) = default;
-    sync_pmutex2& operator=(const sync_pmutex2&) = delete;
-    sync_pmutex2& operator=(sync_pmutex2&&) = default;
+    sync_HansBarz(const sync_HansBarz&) = delete;
+    sync_HansBarz(sync_HansBarz&&) = default;
+    sync_HansBarz& operator=(const sync_HansBarz&) = delete;
+    sync_HansBarz& operator=(sync_HansBarz&&) = default;
 
 public:
-    // Typical counting-semaphore implemented as binary-semaphore approach
     inline void wait()
     {
-        pthread_mutex_lock(&count_mutex);
+        pthread_mutex_lock(&pv_mutex); // wait ... 
+        pthread_mutex_lock(&cs_mutex);
         --count;
-        if (count < 0)
+        if (count > 0)
         {
-            pthread_mutex_unlock(&count_mutex);
-            pthread_mutex_lock(&signal_mutex);
+            pthread_mutex_unlock(&pv_mutex);
         }
-        else
-        {
-            pthread_mutex_unlock(&count_mutex);
-        }
+        pthread_mutex_unlock(&cs_mutex);
     }
 
     inline void notify()
     {
-        pthread_mutex_lock(&count_mutex);
+        pthread_mutex_lock(&cs_mutex);
         ++count;
-        if (count <= 0)
+        if (count == 1)
         {
-            pthread_mutex_unlock(&count_mutex);
-            pthread_mutex_unlock(&signal_mutex);
+            pthread_mutex_unlock(&pv_mutex); // notify ... 
         }
-        else
-        {
-            pthread_mutex_unlock(&count_mutex);
-        }
+        pthread_mutex_unlock(&cs_mutex);
     }
 
 private:
     std::int32_t count;
-    pthread_mutex_t  count_mutex; // resolve race among consumers
-    pthread_mutex_t signal_mutex; // resolve between consumer and producer
+    pthread_mutex_t cs_mutex; // for critical session protection
+    pthread_mutex_t pv_mutex; // for signaling, i.e. p and v
 }; 
   
 // ***************************************** //
 // *** Implementation with std semaphore *** //
 // ***************************************** //
-/*
 class sync_semaphore
 {
 public:
-    sync_semaphore() : semaphore(0) // initial count is zero, i.e. consumer must wait 
+    sync_semaphore() // : semaphore(0) // initial count is zero, i.e. consumer must wait 
     {
     }
 
@@ -209,17 +210,17 @@ public:
 public:
     inline void wait()
     {
-        semaphore.acquire();
+    //  semaphore.acquire();
     }
 
     inline void notify()
     {
-        semaphore.release();
+    //  semaphore.release();
     }
 
 private:
-    std::counting_semaphore<1> semaphore;
-};  */ 
+//  std::counting_semaphore<1> semaphore;
+};   
 
 // ********************************************* //
 // *** Implementation with pthread semaphore *** //

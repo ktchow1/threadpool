@@ -10,25 +10,27 @@
 // T = task (must be default constructible if lockfree_queue is used)
 // Q = multi-thread safe queue
 // S = synchronization primitive
-// ****************************************************************************************** //
-// S = sync_futex         may deadlock, fastest  (Todo : make lock and counter update atomic)  
-// S = sync_pmutex       100% deadlock           (Todo : support multi consumers)
-// S = sync_pmutex2      work, medium speed
-// S = sync_psemaphore   work, medium speed
-// S = sync_condvar      work, slower speed 
-// ****************************************************************************************** //
+// ****************************************************************** //
+// S = sync_futex        work, 1.7us 
+// S = sync_pmutex       deadlock
+// S = sync_HansBarz     work, 1.7us 
+// S = sync_psemaphore   work, 1.7us
+// S = sync_condvar      work, 2.2us
+// ****************************************************************** //
 template<std::invocable T, 
-         template<typename> typename Q = locked_queue,  
-         typename S = sync_psemaphore>       
+         template<typename> typename Q = YLib::mutex_locked_queue,  
+//       sync_primitive S = sync_futex>       
+         sync_primitive S = sync_psemaphore>       
 class threadpool
 {
 public:
     threadpool() = delete;
    ~threadpool()
     { 
-        run.store(false);
-        for(std::uint32_t n=0; n!=threads.size(); ++n) sync.notify();
-        for(std::uint32_t n=0; n!=threads.size(); ++n) threads[n].join();
+        for(std::uint32_t n=0; n!=threads.size(); ++n) 
+        {
+            threads[n].join();
+        }
     }
 
     threadpool(const threadpool&) = delete;
@@ -49,8 +51,18 @@ public:
         for(auto& x:threads)
         {
             set_thread_affinity(x.native_handle(), affinity);
-            set_thread_priority(x.native_handle(), SCHED_RR);
+            set_thread_policy  (x.native_handle(), SCHED_RR);
         }        
+    }
+
+public: 
+    void stop()
+    {
+        run.store(false);
+        for(std::uint32_t n=0; n!=threads.size(); ++n) 
+        {
+            sync.notify();
+        }
     }
 
 public: 
@@ -58,16 +70,24 @@ public:
     // *** Producer of tasks *** //
     // ************************* //    
     template<typename... ARGS>
-    void emplace_task(ARGS&&... args)
+    bool emplace_task(ARGS&&... args)
     {
-        bool done = false;
-        while(!done) 
+        if (task_queue.emplace(std::forward<ARGS>(args)...))
         {
-            done = task_queue.emplace(std::forward<ARGS>(args)...);
+            sync.notify(); 
+            return true;
         }
-        sync.notify(); 
+        else
+        {
+            return false;
+        }
+    }
 
-        // Ideally, semaphore::count == queue::size
+    template<typename... ARGS>
+    void emplace_task_until_success(ARGS&&... args)
+    {
+        while(!task_queue.emplace(std::forward<ARGS>(args)...));
+        sync.notify(); 
     }
 
 private:
@@ -76,7 +96,15 @@ private:
     // ************************* //    
     void thread_fct()
     {
-        while(run.load() || task_queue.peek_size() > 0)
+        // Decouple two checking :
+        // 1. is threadpool running 
+        // 2. is task queue empty 
+        //
+        // Adventages of decoupling :
+        // 1. avoid repeated lock & unlock on peeking queue size
+        // 2. avoid lost notification on stopping threadpool
+
+        while(run.load())
         {
             sync.wait();
             auto task = task_queue.pop();
@@ -84,8 +112,16 @@ private:
             {
                 (*task)();
             }
+        }
 
-            // Todo : can we invoke task before popping? Feasible only for mpsc?
+        // All threads are now spinning (no more waiting).
+        while(task_queue.peek_size() > 0)
+        {
+            auto task = task_queue.pop();
+            if (task)
+            {
+                (*task)();
+            }
         }
     }
 
