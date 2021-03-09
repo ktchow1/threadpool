@@ -1,13 +1,25 @@
-
 #include <iostream>
 #include <thread>
 #include <concepts>
 #include <coroutine>
 #include <exception>
 
-// ****************** // 
-// *** Approach 0 *** //
-// ****************** // 
+// Big 6 in C++ coroutine
+// 1. caller
+// 2. coroutine
+// 3. coroutine_handle  = resumption by caller (no customization, fixed by C++)
+// 4. future            = customization of coroutine return value
+// 5. promise           = customization of future construction (promise is the data-link between caller and coroutine)
+// 6. awaitable         = customization of co_await return value (and other properties)
+// 6a awaitable.ready   =  true : no allocation, no coroutine_handle created
+//                      = false :    allocation of coroutine_states in heap, construction of coroutine_handle
+// 6b awaitable.suspend =  true :    suspension, return control to caller
+//                      = false : no suspension, yet time is wasted in construction of coroutine_handle
+
+
+// ******************** // 
+// *** Experiment 0 *** //
+// ******************** // 
 // How does caller get a coroutine_handle? 
 // 1. pass handle pointer from caller to coroutine
 // 2. pass handle pointer from coroutine to awaitable
@@ -62,9 +74,9 @@ future0 coroutine0(std::coroutine_handle<>* h_ptr)
 }
 
 
-// ****************** // 
-// *** Approach 1 *** //
-// ****************** // 
+// ******************** // 
+// *** Experiment 1 *** //
+// ******************** // 
 // How does caller get a coroutine pointer (with another method)?
 // 1. promise constructs a future object with coroutine_handle inside
 // 2. caller obtains handle from future::get() or 
@@ -111,9 +123,9 @@ struct future1
 }
 
 
-// ****************** // 
-// *** Approach 2 *** //
-// ****************** // 
+// ******************** // 
+// *** Experiment 2 *** //
+// ******************** // 
 // How does coroutine get a coroutine handle (with another method)?
 // 1. coroutine invokes co_await operator and capture the return value
 // 2. define the return value in awaitable::resume
@@ -127,9 +139,9 @@ struct future1
 // we form data connection between caller and coroutine, 
 // we can put data inside promise for communication.
 //
-// Here, in this example, we have 2 awaitable objects in coroutine.
-// 1. awaitable for getting promise in coroutine, called once only
-// 2. awaitable std::suspend_always for looping in coroutine
+// Here, in this example, we use 2 awaitable objects in coroutine.
+// 1. one awaitable for getting promise in coroutine, called once only
+// 2. one awaitable returns std::suspend_always for suspension in coroutine
 
 template<typename T>
 struct future2 
@@ -176,12 +188,12 @@ struct awaitable2
     bool await_ready() const noexcept { return false; }
 //  void await_suspend(std::coroutine_handle<> h) 
     bool await_suspend(std::coroutine_handle<typename future2<T>::promise_type> h) // <--- need to add promise_type inside handle
-    {                                                                              //      dont forget typename ...
+    {                                                                              //      don't forget keyword typename ...
         std::cout << "\nawaitable::suspend(handle)";
         p_ptr = &h.promise();   
 
         // We don't want suspension from this awaitable
-        // it offers an access to handle only.
+        // it offers an access to handle only. 
         return false; 
     }
     typename future2<T>::promise_type* await_resume() const noexcept
@@ -189,18 +201,44 @@ struct awaitable2
         return p_ptr;
     }
 
-//  std::coroutine_handle<>* h_ptr; // use pointer to promise instead of pointer to handle 
+//  std::coroutine_handle<>* h_ptr; // use promise-pointer instead of handle-pointer
     future2<T>::promise_type* p_ptr;
 }; 
 
 template<typename T>
 [[nodiscard]] future2<T> coroutine2()
 {
+    // 1st awaitable is invoked once ...
+    auto p_ptr = co_await awaitable2<T>{};
+
     for(std::uint32_t n=0;; ++n) 
     {
+        p_ptr->data.set(n);
+
+        // 2nd awaitable is invoked multiple times ...
         co_await std::suspend_always{};
-        std::cout << "\ncoroutine1::iteration " << n << " with thread_id = " << std::this_thread::get_id();
+        std::cout << "\ncoroutine1::iteration " << n << " with thread_id = " << std::this_thread::get_id() << ", data = " << p_ptr->data;
     }
+}
+
+struct pod
+{
+    char a;
+    char b;
+    char c;
+
+    inline void set(std::uint32_t n)
+    {
+        a = 'a'+n;
+        b = 'b'+n;
+        c = 'c'+n;
+    }
+};
+
+std::ostream& operator<<(std::ostream& os, const pod& x)
+{
+    os << x.a << x.b << x.c;
+    return os;
 }
 
 // ********************* //
@@ -208,31 +246,44 @@ template<typename T>
 // ********************* //
 void test_coroutine()
 {
-    // *** Approach 0 *** //
+    // *** Experiment 0 *** //
     std::coroutine_handle<> h0;
     std::cout << "\n--------------------";
     coroutine0(&h0);
     std::cout << "\n--------------------";
     std::cout << "\ncaller with main thread_id = " << std::this_thread::get_id();
-    for(int i=0; i<10; ++i) h0();
+    for(int i=0; i<8; ++i)
+    {
+        std::cout << "\ncaller invokes handle";
+        h0();
+    }
     std::cout << "\n\n";
 
 
-    // *** Approach 1 *** //
+    // *** Experiment 1 *** //
     std::cout << "\n--------------------";
     std::coroutine_handle<> h1 = coroutine1();
     std::cout << "\n--------------------";
     std::cout << "\ncaller with main thread_id = " << std::this_thread::get_id();
-    for(int i=0; i<10; ++i) h1();
+    for(int i=0; i<8; ++i) 
+    {
+        std::cout << "\ncaller invokes handle";
+        h1();
+    }
     std::cout << "\n\n";
 
 
-    // *** Approach 2 *** //
+    // *** Experiment 2 *** //
     std::cout << "\n--------------------";
-    std::coroutine_handle<> h2 = coroutine2<std::uint32_t>();
+    std::coroutine_handle<future2<pod>::promise_type> h2 = coroutine2<pod>();
+    future2<pod>::promise_type& p2 = h2.promise();
     std::cout << "\n--------------------";
     std::cout << "\ncaller with main thread_id = " << std::this_thread::get_id();
-    for(int i=0; i<10; ++i) h2();
+    for(int i=0; i<8; ++i) 
+    {
+        std::cout << "\ncaller invokes handle, data = " << p2.data;
+        h2();
+    }
     std::cout << "\n\n";
 
 
