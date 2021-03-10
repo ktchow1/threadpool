@@ -224,7 +224,7 @@ template<typename T>
 
         // 2nd awaitable is invoked multiple times ...
         co_await std::suspend_always{};
-        std::cout << "\ncoroutine1::iteration " << n << " with thread_id = " << std::this_thread::get_id() << ", data = " << p_ptr->data;
+        std::cout << "\ncoroutine2::iteration " << n << " with thread_id = " << std::this_thread::get_id() << ", data = " << p_ptr->data;
     }
 }
 
@@ -242,7 +242,7 @@ struct pod
     }
 };
 
-std::ostream& operator<<(std::ostream& os, const pod& x)
+inline std::ostream& operator<<(std::ostream& os, const pod& x)
 {
     os << x.a << x.b << x.c;
     return os;
@@ -311,7 +311,7 @@ template<typename T>
         pod data;
         data.set(n);
         co_yield data;
-        std::cout << "\ncoroutine1::iteration " << n << " with thread_id = " << std::this_thread::get_id() << ", data = " << data;
+        std::cout << "\ncoroutine3::iteration " << n << " with thread_id = " << std::this_thread::get_id() << ", data = " << data;
     }
 }
 
@@ -368,69 +368,7 @@ template<typename T>
         pod data;
         data.set(n);
         co_yield data;
-        std::cout << "\ncoroutine1::iteration " << n << " with thread_id = " << std::this_thread::get_id() << ", data = " << data;
-    }
-}
-
-
-// ******************** // 
-// *** Experiment 5 *** //
-// ******************** // 
-// Generator pattern
-// 1. caller housekeeps the future returned from coroutine (instead of casting to handle)
-// 2. caller invokes the future directly (instead of getting handle and invoke) 
-
-template<typename T>
-struct future5 
-{
-    struct promise_type 
-    {
-        promise_type()                       {   std::cout << "\npromise::promise";   } 
-        future5 get_return_object()          {   std::cout << "\npromise::ret_obj"; 
-                                                 return future5
-                                                 { 
-                                                     std::coroutine_handle<promise_type>::from_promise(*this) 
-                                                 };
-                                             }   
-        void unhandled_exception()           {   }
-        std::suspend_never initial_suspend() {   std::cout << "\npromise::initial"; return {};   }
-        std::suspend_always  final_suspend() {   std::cout << "\npromise::final";   return {};   }
-        std::suspend_always  yield_value(const T& x)
-        {
-            data = x; 
-            return {};
-        }
-
-        T data; 
-    };
-
-    explicit future5(std::coroutine_handle<promise_type> h_) : h(h_) 
-    {
-        std::cout << "\nfuture5::future5"; 
-    } 
-
-    // *** Conversion operator *** //
-/*  operator bool() const 
-    {
-        return ;
-    } */
-
-    void operator()() 
-    {
-    }
-
-    std::coroutine_handle<promise_type> h;
-};
-
-template<typename T>
-[[nodiscard]] future5<T> coroutine5()
-{
-    for(std::uint32_t n=0; n!=8; ++n) 
-    {
-        pod data;
-        data.set(n);
-        co_yield data;
-        std::cout << "\ncoroutine1::iteration " << n << " with thread_id = " << std::this_thread::get_id() << ", data = " << data;
+        std::cout << "\ncoroutine4::iteration " << n << " with thread_id = " << std::this_thread::get_id() << ", data = " << data;
     }
 }
 
