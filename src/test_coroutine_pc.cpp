@@ -69,9 +69,10 @@ struct future
     }
 
     // Mimic python : sink.send(data)
-    void send_T_to_coroutine(const T& t) const
+    template<typename... ARGS>
+    void send_T_to_coroutine(ARGS&&... args) const // universal reference
     {
-        h.promise().data_T = t;
+        h.promise().data_T = T{ std::forward<ARGS>(args)... };
         h();
     }
 
@@ -81,7 +82,6 @@ struct future
         h();
         return h.promise().data_U;
     }
-
 
     std::coroutine_handle<promise_type> h;
 };
@@ -94,7 +94,7 @@ struct awaitable
     bool await_suspend(std::coroutine_handle<typename future<T,U>::promise_type> h) 
     {
         data_T_ptr = &(h.promise().data_T);
-//      data_U_ptr = &(h.promise().data_U);
+//      data_U_ptr = &(h.promise().data_U); 
         return true; 
     }
     const T& await_resume() const noexcept
@@ -103,9 +103,12 @@ struct awaitable
     }
 
     T* data_T_ptr = nullptr;
-//  U* data_U_ptr = nullptr;
+//  U* data_U_ptr = nullptr; // As U is transmitted by co_yield, no need to keep it here.
 }; 
 
+// ************************* //
+// *** Example coroutine *** //
+// ************************* //
 [[nodiscard]] future<pod_T, pod_U> coroutine()
 {
     // Two suspensions in each loop

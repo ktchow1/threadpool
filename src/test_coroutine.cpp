@@ -4,70 +4,40 @@
 #include <coroutine>
 #include <exception>
 
-// Big 6 in C++ coroutine
-// 1. caller
-// 2. coroutine
-// 3. coroutine_handle  = resumption by caller (no customization, fixed by C++)
-// 4. future            = customization of coroutine return value
-// 5. promise           = customization of future construction (promise is the data-link between caller and coroutine)
-// 6. awaitable         = customization of co_await return value (and other properties)
-// 6a awaitable.ready   =  true : no allocation, no coroutine_handle created
-//                      = false :    allocation of coroutine_states in heap, construction of coroutine_handle
-// 6b awaitable.suspend =  true :    suspension, return control to caller
-//                      = false : no suspension, yet time is wasted in construction of coroutine_handle
-
 
 // ******************** // 
 // *** Experiment 0 *** //
 // ******************** // 
-// How does caller get a coroutine_handle? 
-// 1. pass handle pointer from caller to coroutine
-// 2. pass handle pointer from coroutine to awaitable
-// 3. init handle pointer inside awaitable::suspend
-// 
-// How does coroutine get a coroutine_handle?
-// 1. own  handle pointer inside coroutine
-// 2. pass handle pointer from coroutine to awaitable (same as above)
-// 3. init handle pointer inside awaitable::suspend   (same as above)
-//
-// step-1 -> step 7 : steps before 1st resumption 
-// step-A -> step E : steps after each resumption
-//
-// How to expand the flow in promise?
-// How to expand the flow in awaitable?
-
 struct future0 
 {
     struct promise_type // This is promise_type, NOT promise.
     {
-        promise_type()                       {  std::cout << "\npromise::promise";             } // step-1
-        future0 get_return_object()          {  std::cout << "\npromise::ret_obj"; return {};  } // step-2
+        promise_type()                       {  std::cout << "\npromise::promise";             }
+        future0 get_return_object()          {  std::cout << "\npromise::ret_obj"; return {};  }
         void unhandled_exception()           {  }
-        std::suspend_never initial_suspend() {  std::cout << "\npromise::initial"; return {};  } // step-4
+        std::suspend_never initial_suspend() {  std::cout << "\npromise::initial"; return {};  } 
         std::suspend_never   final_suspend() {  std::cout << "\npromise::final";   return {};  }
     };
     
     future0()
     {
-        std::cout << "\nfuture0::future0"; // step-3
+        std::cout << "\nfuture0::future0"; 
     }
 };
 
 struct awaitable0
 {
-    explicit awaitable0(std::coroutine_handle<>* h_ptr_) : h_ptr(h_ptr_), n(0) 
+    explicit awaitable0(std::coroutine_handle<>* h_ptr_) : h_ptr(h_ptr_)
     {
-        std::cout << "\nawait::await"; // step-5 
+        std::cout << "\nawait::await"; 
     }
 
     // No printing for constexpr fct.
-    bool await_ready()  const noexcept            { std::cout << "\nawait::ready";  return ++n%2==0; } // step-6, step-D
-    void await_suspend(std::coroutine_handle<> h) { std::cout << "\nawait::suspend(h)";  *h_ptr = h; } // step-7, step-E
-    // -----------------------------------------------------------------------------------------------------------------
-    void await_resume() const noexcept            { std::cout << "\nawait::resume";                  } //         step-B
+    bool await_ready()  const noexcept            { std::cout << "\nawait::ready";     return false; } 
+    void await_suspend(std::coroutine_handle<> h) { std::cout << "\nawait::suspend(h)";  *h_ptr = h; }
+    void await_resume() const noexcept            { std::cout << "\nawait::resume";                  }
 
     std::coroutine_handle<>* h_ptr;
-    mutable std::uint32_t n;
 };
 
 future0 coroutine0(std::coroutine_handle<>* h_ptr)
@@ -84,11 +54,6 @@ future0 coroutine0(std::coroutine_handle<>* h_ptr)
 // ******************** // 
 // *** Experiment 1 *** //
 // ******************** // 
-// How does caller get a coroutine pointer (with another method)?
-// 1. promise constructs a future object with coroutine_handle inside
-// 2. caller obtains handle from future::get() or 
-//    caller obtains handle from future::conversion_to_handle
-
 struct future1 
 {
     struct promise_type 
@@ -133,23 +98,6 @@ struct future1
 // ******************** // 
 // *** Experiment 2 *** //
 // ******************** // 
-// How does coroutine get a coroutine handle (with another method)?
-// 1. coroutine invokes co_await operator and capture the return value
-// 2. define the return value in awaitable::resume
-//
-// Besides ...
-// coroutine_handle can be converted into promise by : p = coroutine_handle::promise()
-// promise can be converted into coroutine_handle by : h = coroutine_handle::from_promise(*this)
-// 
-// Now caller can access coroutine_handle,
-// coroutine can access coroutine_handle,
-// we form data connection between caller and coroutine, 
-// we can put data inside promise for communication.
-//
-// Here, in this example, we use 2 awaitable objects in coroutine.
-// 1. one awaitable for getting promise in coroutine, called once only
-// 2. one awaitable returns std::suspend_always for suspension in coroutine
-
 template<typename T>
 struct future2 
 {
@@ -252,18 +200,6 @@ inline std::ostream& operator<<(std::ostream& os, const pod& x)
 // ******************** // 
 // *** Experiment 3 *** //
 // ******************** // 
-// There are two approaches to transfer data between caller and coroutine :
-//
-// 1. The method we saw in experiment 2 ... 
-// -  shared data in promise
-// -  caller gets access to promise
-// -  coroutine gets access to promise and update it 
-// 2. The method we are going to test in experiment 3 ...
-// -  shared data in promise
-// -  caller gets access to promise 
-// -  coroutine sends data to promise directly by co_yield or co_return
-// -  hence in the following experiment, no customization of awaitable needed
-
 template<typename T>
 struct future3 
 {
@@ -318,9 +254,6 @@ template<typename T>
 // ******************** // 
 // *** Experiment 4 *** //
 // ******************** // 
-// Return std::suspend_always from initial_suspend if we need to delay the first production. 
-// Return std::suspend_always from   final_suspend if we need to use handle when coroutine is done.
-
 template<typename T>
 struct future4 
 {
@@ -384,6 +317,7 @@ void test_coroutine()
 
     // *** Experiment 0 *** //
     std::coroutine_handle<> h0;
+    std::cout << "\nExperiment 0";
     std::cout << "\n--------------------";
     coroutine0(&h0);
     std::cout << "\n--------------------";
@@ -396,6 +330,7 @@ void test_coroutine()
 
 
     // *** Experiment 1 *** //
+    std::cout << "\nExperiment 1";
     std::cout << "\n--------------------";
     std::coroutine_handle<> h1 = coroutine1();
     std::cout << "\n--------------------";
@@ -408,6 +343,7 @@ void test_coroutine()
 
 
     // *** Experiment 2 *** //
+    std::cout << "\nExperiment 2";
     std::cout << "\n--------------------";
     std::coroutine_handle<future2<pod>::promise_type> h2 = coroutine2<pod>();
     future2<pod>::promise_type& p2 = h2.promise();
@@ -421,6 +357,7 @@ void test_coroutine()
 
 
     // *** Experiment 3 *** // 
+    std::cout << "\nExperiment 3";
     std::cout << "\n-------------------- [The caller part is the same as in expt 2&3.]";
     std::coroutine_handle<future3<pod>::promise_type> h3 = coroutine3<pod>();
     future3<pod>::promise_type& p3 = h3.promise();
@@ -434,6 +371,7 @@ void test_coroutine()
     
 
     // *** Experiment 4 *** // 
+    std::cout << "\nExperiment 4";
     std::cout << "\n--------------------";
     std::coroutine_handle<future4<pod>::promise_type> h4 = coroutine4<pod>();
     future4<pod>::promise_type& p4 = h4.promise();

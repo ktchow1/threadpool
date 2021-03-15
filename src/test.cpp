@@ -71,9 +71,9 @@ int main(int argc, char* argv[])
 //  test_semaphore();
 //  test_threadpool(); 
 //  test_lockfree();    
-//  test_coroutine();
+    test_coroutine();
 //  test_coroutine_gen();
-    test_coroutine_pc();
+//  test_coroutine_pc();
 
 
     // ********************************************************************************************************* //
