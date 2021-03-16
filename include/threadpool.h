@@ -48,11 +48,11 @@ public:
 
     threadpool(std::uint32_t num_threads, const std::vector<std::uint32_t>& affinity) : threadpool(num_threads)
     {   
-        for(auto& x:threads)
+    /*  for(auto& x:threads) // Not good for my home-machine, apply these setting in production only.
         {
             set_thread_affinity(x.native_handle(), affinity);
             set_thread_policy  (x.native_handle(), SCHED_RR);
-        }        
+        } */ 
     }
 
 public: 

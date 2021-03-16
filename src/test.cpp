@@ -27,6 +27,7 @@ void test_semaphore();
 
 // *** Others *** //
 void test_threadpool();
+void test_threadpoolJ();
 void test_lockfree();
 void test_coroutine();
 void test_coroutine_gen();
@@ -70,8 +71,9 @@ int main(int argc, char* argv[])
 */
 //  test_semaphore();
 //  test_threadpool(); 
+    test_threadpoolJ(); 
 //  test_lockfree();    
-    test_coroutine();
+//  test_coroutine();
 //  test_coroutine_gen();
 //  test_coroutine_pc();
 
