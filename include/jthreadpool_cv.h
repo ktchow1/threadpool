@@ -1,5 +1,5 @@
-#ifndef __EXPERIMENTAL_THREADPOOL_JCV_H__
-#define __EXPERIMENTAL_THREADPOOL_JCV_H__
+#ifndef __EXPERIMENTAL_JTHREADPOOL_CV_H__
+#define __EXPERIMENTAL_JTHREADPOOL_CV_H__
 #include<iostream>
 #include<vector>
 #include<queue>
@@ -8,18 +8,18 @@
 #include<mutex>
 #include<condition_variable>
 
-class threadpool_jcv
+class jthreadpool_cv
 {
 public:
-    explicit threadpool_jcv(std::uint32_t num_threads) : out_of_scope(false)
+    explicit jthreadpool_cv(std::uint32_t num_threads) 
     {
         for(std::uint32_t n=0; n!=num_threads; ++n)
         {
-            threads.emplace_back(std::thread(&threadpool_jcv::fct, this, n));
+            jthreads.emplace_back(std::jthread(&jthreadpool_cv::fct, this, s_source.get_token(), n));
         }
     }
 
-    ~threadpool_jcv()
+    ~jthreadpool_cv()
     {
         std::cout << "\njthreadpool destructor" << std::flush;
         stop();
@@ -27,16 +27,16 @@ public:
 
     void stop()
     {
-        out_of_scope.store(true);
-        condvar.notify_all();
-        for(auto& x:threads)
-        {
-            if (x.joinable()) 
-            {
-                x.join();
-            }
-            std::cout << "\nthread joined" << std::flush;
-        }
+        s_source.request_stop();
+    //  condvar.notify_all(); // Change : Stop-callback auto invokes condvar.notify_all().
+    //  for(auto& x:jthreads) // Change : auto-join in destructor. 
+    //  {
+    //      if (x.joinable()) 
+    //      {
+    //          x.join();
+    //      }
+    //      std::cout << "\njthread joined" << std::flush;
+    //  }
     }
 
 public: 
@@ -50,23 +50,26 @@ public:
     }
 
 private:
-    void fct(std::uint32_t id)
+    void fct(std::stop_token s_token, std::uint32_t id)
     {
         try
         {
             // *** 1st loop *** //
-            while(!out_of_scope.load())
+            while(!s_source.get_token().stop_requested())
             {
                 std::function<void()> task;
                 {
                     std::unique_lock<std::mutex> lock(mutex);
-                    condvar.wait(lock, [this]()
+                    if (!condvar.wait(lock, s_token, [this]()
                     { 
-                        return !tasks.empty() || 
-                               out_of_scope.load();
-                    }); 
+                        return !tasks.empty();
+                    //        || out_of_scope.load(); // Change : Move stop-token into predicate.
+                    }))
+                    {
+                        break; // Change : For stop_requested, break ...
+                    } 
 
-                    if (out_of_scope.load()) break;
+                //  if (out_of_scope.load()) break;
                     task = std::move(tasks.front());
                     tasks.pop();
                 }
@@ -94,11 +97,11 @@ private:
     }
 
 private:
-    std::vector<std::thread> threads;
+    std::vector<std::jthread> jthreads;
     std::queue<std::function<void()>> tasks;
     mutable std::mutex mutex;
-    std::condition_variable condvar;
-    std::atomic<bool> out_of_scope;
+    std::condition_variable_any condvar;   // Change : Replace condvar by condvar_any.
+    std::stop_source s_source;             // Change : Replace out_of_scope by stop-source.
 };
 
 #endif

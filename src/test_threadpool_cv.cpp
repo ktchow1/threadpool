@@ -1,11 +1,12 @@
 #include<threadpool_cv.h>
-#include<threadpool_jcv.h>
+#include<jthreadpool_cv.h>
 
 
+template<typename POOL>
 void test_threadpool_cv_impl(std::uint32_t throw_in_main,
                              std::uint32_t throw_in_task)
 {
-    threadpool_cv pool(4);
+    POOL pool(4);
     for(std::uint32_t n=0; n!=20; ++n)
     {
         auto task = std::bind
@@ -48,10 +49,13 @@ void test_threadpool_cv_impl(std::uint32_t throw_in_main,
 
 void test_threadpool_cv()
 {
+    // ****************** //
+    // *** Threadpool *** //
+    // ****************** //
     std::cout << "\n[Threadpool_cv : no throw]";
     try
     {
-        test_threadpool_cv_impl(10000,10000);
+        test_threadpool_cv_impl<threadpool_cv>(10000,10000);
     }
     catch(std::exception& e)
     {
@@ -61,7 +65,7 @@ void test_threadpool_cv()
     std::cout << "\n\n[Threadpool_cv : throw in main]";
     try
     {
-        test_threadpool_cv_impl(12,10000);
+        test_threadpool_cv_impl<threadpool_cv>(12,10000);
     }
     catch(std::exception& e)
     {
@@ -71,7 +75,40 @@ void test_threadpool_cv()
     std::cout << "\n\n[Threadpool_cv : throw in task]";
     try
     {
-        test_threadpool_cv_impl(10000,12);
+        test_threadpool_cv_impl<threadpool_cv>(10000,12);
+    }
+    catch(std::exception& e)
+    {
+        std::cout << "\nexception caught in main, " << e.what() << std::flush;
+    } 
+
+    // ******************* //
+    // *** Jthreadpool *** //
+    // ******************* //
+    std::cout << "\n\n[Jthreadpool_cv : no throw]";
+    try
+    {
+        test_threadpool_cv_impl<jthreadpool_cv>(10000,10000);
+    }
+    catch(std::exception& e)
+    {
+        std::cout << "\nexception caught " << e.what() << std::flush;
+    } 
+  
+    std::cout << "\n\n[Jthreadpool_cv : throw in main]";
+    try
+    {
+        test_threadpool_cv_impl<jthreadpool_cv>(12,10000);
+    }
+    catch(std::exception& e)
+    {
+        std::cout << "\nexception caught in main, " << e.what() << std::flush;
+    } 
+  
+    std::cout << "\n\n[Jthreadpool_cv : throw in task]";
+    try
+    {
+        test_threadpool_cv_impl<jthreadpool_cv>(10000,12);
     }
     catch(std::exception& e)
     {

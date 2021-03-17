@@ -79,8 +79,8 @@ private:
                     condvar.wait(lock, [this]()
                     { 
                         // Predicate returns true to continue
-                        return !tasks.empty() || 
-                               out_of_scope.load(); // BUG1 : missing this results in wakeup-miss on termination
+                        return !tasks.empty() 
+                              || out_of_scope.load(); // BUG1 : missing this results in wakeup-miss on termination
                     }); 
 
                     if (out_of_scope.load()) break; // BUG2 : missing this results in popping empty queue on termination
