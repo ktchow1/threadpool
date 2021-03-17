@@ -1,11 +1,14 @@
 
+
 #include<iostream>
 #include<latency_test.h>
 
 void test_epoll();
 void test_invocable();
 void test_unlock_mutex_in_another_thread();
-
+void test_promise_and_future(); 
+void test_jthread0(); 
+void test_jthread1(); 
 
 // *** Time thread *** //
 void timer_resolution();
@@ -27,7 +30,7 @@ void test_semaphore();
 
 // *** Others *** //
 void test_threadpool();
-void test_threadpoolJ();
+void test_threadpool_cv();
 void test_lockfree();
 void test_coroutine();
 void test_coroutine_gen();
@@ -39,6 +42,9 @@ int main(int argc, char* argv[])
 //  test_epoll();
 //  test_invocable();
 //  test_unlock_mutex_in_another_thread();
+    test_promise_and_future();
+    test_jthread0();
+//  test_jthread1();
   
     // ******************* //
     // *** Time thread *** //
@@ -71,7 +77,7 @@ int main(int argc, char* argv[])
 */
 //  test_semaphore();
 //  test_threadpool(); 
-    test_threadpoolJ(); 
+    test_threadpool_cv(); 
 //  test_lockfree();    
 //  test_coroutine();
 //  test_coroutine_gen();

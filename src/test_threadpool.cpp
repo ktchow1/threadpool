@@ -1,4 +1,5 @@
 
+
 #include<iostream>
 #include<functional>
 #include<threadpool.h>
@@ -71,7 +72,8 @@ void test_threadpool_impl(const std::string& label, std::uint32_t waiting_in_us)
     results.resize(num_trials);
 
     {
-        threadpool<task, QUEUE> pool(8, {1,2});
+    //  threadpool<task, QUEUE> pool(8, {1,2}); // This mode requires : 1. release mode and 2. sudo 
+        threadpool<task, QUEUE> pool(8);
         for(std::uint32_t n=0; n!=num_trials; ++n)
         {
             double r = rand() % 1000 / 200.0;
