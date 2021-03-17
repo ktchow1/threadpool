@@ -42,9 +42,9 @@ int main(int argc, char* argv[])
 //  test_epoll();
 //  test_invocable();
 //  test_unlock_mutex_in_another_thread();
-    test_promise_and_future();
+//  test_promise_and_future();
     test_jthread0();
-//  test_jthread1();
+    test_jthread1();
   
     // ******************* //
     // *** Time thread *** //
@@ -77,7 +77,7 @@ int main(int argc, char* argv[])
 */
 //  test_semaphore();
 //  test_threadpool(); 
-    test_threadpool_cv(); 
+//  test_threadpool_cv();  // <---
 //  test_lockfree();    
 //  test_coroutine();
 //  test_coroutine_gen();

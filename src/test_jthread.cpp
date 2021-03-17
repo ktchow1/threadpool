@@ -1,7 +1,7 @@
-
 #include<iostream>
 #include<vector>
 #include<thread>
+#include<functional> // for std::placeholders
 
 // ***************************** //
 // Jthread is for RAII, as it :
@@ -10,7 +10,7 @@
 // ***************************** //
 void test_jthread0()
 {
-    std::cout << "\n[TEST] stop source and stop token";
+    std::cout << "\n[TEST] stop source and stop token for std::thread";
 
     std::stop_source s_source;
     std::vector<std::thread> threads;
@@ -28,30 +28,42 @@ void test_jthread0()
             std::cout << "\nthread " << thread_id << ", done" << std::flush; 
         }, n));
     }
-
     std::this_thread::sleep_for(std::chrono::seconds(4));
-    s_source.request_stop();
 
+    // *** Stop and join are auto for jthread *** //
+    s_source.request_stop();
     for(auto& x:threads) x.join();
+
     std::cout << "\n\n";
 }
-
-// How can I repeat the above with jthread?
-
-
+  
 void test_jthread1()
 {
-    std::jthread jthread([](std::stop_token s_token)
-    {
-        std::uint32_t n=0;
-        while(s_token.stop_requested())
-        {
-            std::cout << "\nhello " << n << std::flush;
-            std::this_thread::sleep_for(std::chrono::milliseconds(500));
-            ++n;
-        }
-        std::cout << "\nbyebye" << std::flush;
-    });
+    std::cout << "\n[TEST] stop source and stop token for std::jthread";
 
-    std::this_thread::sleep_for(std::chrono::seconds(5));
-}
+//  std::stop_source s_source; // Change 1
+    std::vector<std::jthread> threads;
+    for(std::uint32_t n=0; n!=5; ++n)
+    {
+        // Change 2 : captured token becomes arg
+        threads.push_back(std::jthread([](std::stop_token s_token, std::uint32_t thread_id)
+        {
+            std::uint32_t n = 0;
+            while(!s_token.stop_requested())
+            {
+                std::cout << "\njthread " << thread_id << ", loop " << n << std::flush; 
+                std::this_thread::sleep_for(std::chrono::milliseconds(400 + 40 * thread_id));
+                ++n;
+            }
+            std::cout << "\njthread " << thread_id << ", done" << std::flush; 
+        }, n)); 
+    //  }, std::placeholders::_1, n)); // Why no placeholders needed?
+    }
+    std::this_thread::sleep_for(std::chrono::seconds(4));
+
+    // Change 3 : Stop and join are auto
+//  s_source.request_stop();
+//  for(auto& x:threads) x.join(); 
+
+    std::cout << "\n\n";
+} 

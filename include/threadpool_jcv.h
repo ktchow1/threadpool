@@ -1,5 +1,5 @@
-#ifndef __EXPERIMENTAL_THREADPOOL_CV_H__
-#define __EXPERIMENTAL_THREADPOOL_CV_H__
+#ifndef __EXPERIMENTAL_THREADPOOL_JCV_H__
+#define __EXPERIMENTAL_THREADPOOL_JCV_H__
 #include<iostream>
 #include<vector>
 #include<queue>
@@ -8,39 +8,29 @@
 #include<mutex>
 #include<condition_variable>
 
-// **************************************************** //
-// Common problems in threadpool :
-// 1. destruct a running thread (without stop / join)
-// 2. join a already joined thread 
-// 3. pop a destructed task-queue
-// **************************************************** //
-class threadpool_cv
+class threadpool_jcv
 {
 public:
-    explicit threadpool_cv(std::uint32_t num_threads) : out_of_scope(false)
+    explicit threadpool_jcv(std::uint32_t num_threads) : out_of_scope(false)
     {
         for(std::uint32_t n=0; n!=num_threads; ++n)
         {
-            threads.emplace_back(std::thread(&threadpool_cv::fct, this, n));
+            threads.emplace_back(std::thread(&threadpool_jcv::fct, this, n));
         }
     }
 
-    ~threadpool_cv()
+    ~threadpool_jcv()
     {
-        std::cout << "\nthreadpool destructor" << std::flush;
+        std::cout << "\njthreadpool destructor" << std::flush;
         stop();
     }
 
-    // Stop may be called 2 times : 
-    // 1. once explicitly
-    // 2. once inside destructor
     void stop()
     {
         out_of_scope.store(true);
         condvar.notify_all();
         for(auto& x:threads)
         {
-            // BUG3 : Need to check joinable to avoid multi-join, otherwise it throws
             if (x.joinable()) 
             {
                 x.join();
@@ -60,15 +50,9 @@ public:
     }
 
 private:
-    // Two-loop approaches to decouple :
-    // 1. checking of out-of-scope and
-    // 2. checking of queue emptyness 
     void fct(std::uint32_t id)
     {
-        // set affinity here (skipped for simplicity)
-        // set priority here (skipped for simplicity)
-        
-        try // BUG4 : Need to handle exception thrown from task
+        try
         {
             // *** 1st loop *** //
             while(!out_of_scope.load())
@@ -78,18 +62,17 @@ private:
                     std::unique_lock<std::mutex> lock(mutex);
                     condvar.wait(lock, [this]()
                     { 
-                        // Predicate returns true to continue
                         return !tasks.empty() || 
-                               out_of_scope.load(); // BUG1 : missing this results in wakeup-miss on termination
+                               out_of_scope.load();
                     }); 
 
-                    if (out_of_scope.load()) break; // BUG2 : missing this results in popping empty queue on termination
+                    if (out_of_scope.load()) break;
                     task = std::move(tasks.front());
                     tasks.pop();
                 }
                 task();
             }
-            std::cout << "\nthread half-done" << id << std::flush;
+            std::cout << "\njthread half-done" << id << std::flush;
 
             // *** 2nd loop *** //
             while(!tasks.empty())
@@ -102,12 +85,11 @@ private:
                 }
                 task();
             }
-            std::cout << "\nthread done " << id << std::flush;
+            std::cout << "\njthread done " << id << std::flush;
         }
         catch(std::exception& e)
         {
             std::cout << "\nexception caugth in worker " << id << ", e = " << e.what() << std::flush;
-        //  stop(); // BUG5 : No need, as threadpool destructor is called in stack unwinding
         }
     }
 
