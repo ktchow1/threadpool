@@ -9,7 +9,7 @@ int probing(int n) { return n * n; }
 
 template<typename K> struct lockfree_hash
 {
-	STATUS set(const K& key, int value) 
+    STATUS set(const K& key, int value) 
     {
         // (1) hash-function
         int hashed_key = murmurhash3(key); 
@@ -20,7 +20,7 @@ template<typename K> struct lockfree_hash
             int index = (hashed_key + probing(n)) & mask; 
 
             // (3) compare-key
-                int tmp = buckets[index].hashed_key.load(); // A “DCLP-liked” trick to reduce chance of slow CAS.
+            int tmp = buckets[index].hashed_key.load(); // A “DCLP-liked” trick to reduce chance of slow CAS.
             if (tmp == EMPTY)
             {
                 int expected = EMPTY;
@@ -30,7 +30,7 @@ template<typename K> struct lockfree_hash
                     expected == hashed_key)
                 {
                     buckets[index].value.store(value);
-                    return OK; 	
+                    return OK;     
                 }
             }
             else if (tmp == hashed_key)
@@ -60,7 +60,7 @@ template<typename K> struct lockfree_hash
         return std::nullopt;
     } 
 
-	static const int size = 1024;
-	static const int mask = size-1;
+    static const int size = 1024;
+    static const int mask = size-1;
     cell<V> buckets[size];
 };
