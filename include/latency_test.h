@@ -107,7 +107,7 @@ public:
 
 // Remarks :
 // 1. Q is constructed outside test, as constructor for different Qs take different parameters.
-// 2. T is movable only         for  YLib::lockfree_queue
+// 2. T is movable only         for     my lockfree_queue
 //    T is movable and copyable for boost::lockfree::queue
 template<typename Q> 
 void queue_test(Q& queue, std::uint32_t num_producers, std::uint32_t num_consumers, std::uint32_t num_tasks)
@@ -171,7 +171,7 @@ void queue_test(Q& queue, std::uint32_t num_producers, std::uint32_t num_consume
         {
             set_this_thread_affinity(n+num_consumers);
             set_this_thread_priority();         // This is necessary, otherwise latency can be as large as 50us.
-        //  set_this_thread_policy(SCHED_FIFO); // This policy kills both boost::lockfree::queue & YLib::lockfree_queue.
+        //  set_this_thread_policy(SCHED_FIFO); // This policy kills both boost::lockfree::queue & my lockfree_queue.
 
             while(ready.load() < num_consumers);
             for(std::uint32_t m=0; m!=num_tasks; ++m)

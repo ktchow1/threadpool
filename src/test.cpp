@@ -78,12 +78,12 @@ int main(int argc, char* argv[])
     sync_test<sync_promfut<NumTest>>("promise and future", NumTest, us);      // 2200 ns
 */
 //  test_semaphore();
-//  test_threadpool(); 
-//  test_threadpool_cv();  // <--- threadpool with condition variable
-//  test_lockfree_queue();    
-//  test_lockfree_hashmap_basic();
+    test_threadpool(); 
+    test_threadpool_cv();  // <--- threadpool with condition variable
+    test_lockfree_queue();    
+    test_lockfree_hashmap_basic();
     test_lockfree_hashmap_multithread();
-//  test_coroutine();
+    test_coroutine();
 //  test_coroutine_gen();
 //  test_coroutine_pc();
 

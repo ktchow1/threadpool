@@ -40,7 +40,6 @@ private:
 };
 
 
-namespace YLib {
 template<typename T, typename LOCK> class locked_queue final
 {
 public:
@@ -107,6 +106,5 @@ template<typename T>
 using mutex_locked_queue = locked_queue<T, std::mutex>;
 template<typename T>
 using spin_locked_queue = locked_queue<T, spinlock>;
-}
 
 #endif

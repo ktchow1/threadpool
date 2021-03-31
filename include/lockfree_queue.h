@@ -7,7 +7,6 @@
 #include<thread>
 #include<optional>
 
-namespace YLib {
 template<typename T, std::uint32_t N = 1024,
          typename CONSTRAINT = std::enable_if_t< std::is_move_constructible<T>::value && (N&(N-1))==0 >> 
 
@@ -82,14 +81,13 @@ template<typename T>
 using lockfree_queue_long = lockfree_queue<T, 1024>;
 template<typename T>
 using lockfree_queue_short = lockfree_queue<T, 4>;
-}
 
 // ********************** //
 // *** Implementation *** //
 // ********************** //
 template<typename T, std::uint32_t N, typename CONSTRAINT> 
 template<typename... ARGS> 
-bool YLib::lockfree_queue<T, N, CONSTRAINT>::emplace(ARGS&&... args) noexcept 
+bool lockfree_queue<T, N, CONSTRAINT>::emplace(ARGS&&... args) noexcept 
 {
     while(true)
     {
@@ -122,7 +120,7 @@ bool YLib::lockfree_queue<T, N, CONSTRAINT>::emplace(ARGS&&... args) noexcept
 }
 
 template<typename T, std::uint32_t N, typename CONSTRAINT> 
-std::optional<T> YLib::lockfree_queue<T, N, CONSTRAINT>::pop() noexcept
+std::optional<T> lockfree_queue<T, N, CONSTRAINT>::pop() noexcept
 {
     while(true)
     {
@@ -159,13 +157,13 @@ std::optional<T> YLib::lockfree_queue<T, N, CONSTRAINT>::pop() noexcept
 // *** boost lockfree queue interface *** //
 // ************************************** //
 template<typename T, std::uint32_t N, typename CONSTRAINT> 
-bool YLib::lockfree_queue<T, N, CONSTRAINT>::push(const T& item) noexcept
+bool lockfree_queue<T, N, CONSTRAINT>::push(const T& item) noexcept
 {
     return emplace(item);
 }
 
 template<typename T, std::uint32_t N, typename CONSTRAINT>
-bool YLib::lockfree_queue<T, N, CONSTRAINT>::pop(T& item) noexcept
+bool lockfree_queue<T, N, CONSTRAINT>::pop(T& item) noexcept
 {
     auto result = pop();
     if (result)
@@ -177,14 +175,14 @@ bool YLib::lockfree_queue<T, N, CONSTRAINT>::pop(T& item) noexcept
 }
 
 template<typename T, std::uint32_t N, typename CONSTRAINT>
-std::uint32_t YLib::lockfree_queue<T, N, CONSTRAINT>::peek_size() const noexcept
+std::uint32_t lockfree_queue<T, N, CONSTRAINT>::peek_size() const noexcept
 {
     return next_write.load(std::memory_order_seq_cst) - next_read.load(std::memory_order_seq_cst);
 }
 
 template<typename T, std::uint32_t N, typename CONSTRAINT> 
 template<template<typename> typename C> 
-void YLib::lockfree_queue<T, N, CONSTRAINT>::deep_copy(C<T>&output) const noexcept 
+void lockfree_queue<T, N, CONSTRAINT>::deep_copy(C<T>&output) const noexcept 
 {
     output.clear();
 
@@ -198,7 +196,7 @@ void YLib::lockfree_queue<T, N, CONSTRAINT>::deep_copy(C<T>&output) const noexce
 }
 
 template<typename T, std::uint32_t N, typename CONSTRAINT> 
-void YLib::lockfree_queue<T, N, CONSTRAINT>::debug() const noexcept
+void lockfree_queue<T, N, CONSTRAINT>::debug() const noexcept
 {
     std::uint32_t nw = next_write.load();
     std::uint32_t nr = next_read.load();

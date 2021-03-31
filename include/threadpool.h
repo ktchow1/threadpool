@@ -18,7 +18,7 @@
 // S = sync_condvar      work, 2.2us
 // ****************************************************************** //
 template<std::invocable T, 
-         template<typename> typename Q = YLib::mutex_locked_queue,  
+         template<typename> typename Q = mutex_locked_queue,  
 //       sync_primitive S = sync_futex>       
          sync_primitive S = sync_psemaphore>       
 class threadpool

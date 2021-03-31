@@ -67,7 +67,7 @@ struct task
 template<template<typename> typename QUEUE>
 void test_threadpool_impl(const std::string& label, std::uint32_t waiting_in_us)
 {
-    std::uint32_t num_trials = 1000;
+    std::uint32_t num_trials = 100;
     std::vector<result> results;
     results.resize(num_trials);
 
@@ -106,16 +106,16 @@ void test_threadpool_impl(const std::string& label, std::uint32_t waiting_in_us)
 
 void test_threadpool()
 {
-    std::cout << "\nThreadpool test (Does not run in debug mode, why?)";
+    std::cout << "\nThreadpool test (Does not run in debug mode, why?)" << std::flush;
 
-    test_threadpool_impl<YLib::lockfree_queue_long> ("lockfree_queue_long", 10);
-    test_threadpool_impl<YLib::lockfree_queue_short>("lockfree_queue_short",10);
-    test_threadpool_impl<YLib::mutex_locked_queue>  ("mutex_locked_queue",  10);
-    test_threadpool_impl<YLib::spin_locked_queue>   ("spin_locked_queue",   10);
+    test_threadpool_impl<lockfree_queue_long> ("lockfree_queue_long", 10);
+    test_threadpool_impl<lockfree_queue_short>("lockfree_queue_short",10);
+    test_threadpool_impl<mutex_locked_queue>  ("mutex_locked_queue",  10);
+    test_threadpool_impl<spin_locked_queue>   ("spin_locked_queue",   10);
 
     // More contention 
-    test_threadpool_impl<YLib::lockfree_queue_long> ("lockfree_queue_long",  0);
-    test_threadpool_impl<YLib::lockfree_queue_short>("lockfree_queue_short", 0); 
-    test_threadpool_impl<YLib::mutex_locked_queue>  ("mutex_locked_queue",   0);
-    test_threadpool_impl<YLib::spin_locked_queue>   ("spin_locked_queue",    0);
+    test_threadpool_impl<lockfree_queue_long> ("lockfree_queue_long",  0);
+    test_threadpool_impl<lockfree_queue_short>("lockfree_queue_short", 0); 
+    test_threadpool_impl<mutex_locked_queue>  ("mutex_locked_queue",   0);
+    test_threadpool_impl<spin_locked_queue>   ("spin_locked_queue",    0);
 }

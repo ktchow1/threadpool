@@ -42,8 +42,6 @@ include_directories(include)
 include_directories("~/Downloads/boost_1_74_0") 
 # include_directories("~/dev/yaml-cpp/include") 
 # include_directories("~/dev/reckless/reckless/include") 
-# include_directories("~/dev/YLibrary/YLibrary/include/y") 
-# include_directories("~/dev/YExperimental/YLibrary/include/y")
 # If the same class exists in more than one include path, pick the former one.
 
 ### source ###
