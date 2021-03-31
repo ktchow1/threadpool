@@ -31,7 +31,9 @@ void test_semaphore();
 // *** Others *** //
 void test_threadpool();
 void test_threadpool_cv();
-void test_lockfree();
+void test_lockfree_queue();
+void test_lockfree_hashmap_basic();
+void test_lockfree_hashmap_multithread();
 void test_coroutine();
 void test_coroutine_gen();
 void test_coroutine_pc();
@@ -43,8 +45,8 @@ int main(int argc, char* argv[])
 //  test_invocable();
 //  test_unlock_mutex_in_another_thread();
 //  test_promise_and_future();
-//  test_jthread0(); // <---
-//  test_jthread1(); // <---
+//  test_jthread0();
+//  test_jthread1();
   
     // ******************* //
     // *** Time thread *** //
@@ -77,8 +79,10 @@ int main(int argc, char* argv[])
 */
 //  test_semaphore();
 //  test_threadpool(); 
-    test_threadpool_cv();  // <---
-//  test_lockfree();    
+//  test_threadpool_cv();  // <--- threadpool with condition variable
+//  test_lockfree_queue();    
+//  test_lockfree_hashmap_basic();
+    test_lockfree_hashmap_multithread();
 //  test_coroutine();
 //  test_coroutine_gen();
 //  test_coroutine_pc();

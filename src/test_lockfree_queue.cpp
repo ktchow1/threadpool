@@ -7,7 +7,7 @@
 #include<latency_test.h>
 
 
-void test_lockfree()
+void test_lockfree_queue()
 {
     boost::lockfree::spsc_queue<task, boost::lockfree::capacity<1024>> queue0;
     boost::lockfree::queue<task> queue1(1024);
