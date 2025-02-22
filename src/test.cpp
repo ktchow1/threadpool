@@ -1,69 +1,33 @@
-
 #include<iostream>
-#include<sync_test.h>
 
+void test_epoll();
 void test_invocable();
 void test_unlock_mutex_in_another_thread();
-
-// *** Time thread *** //
-void timer_resolution();
-void time_thread_create();
-void time_thread_created_by_async_call();    
-void time_mutex_lock_and_unlock();           
-void time_synchronization_with_atomic();     
-void test_pthread_affinity_and_priority();
-
-// *** Time wakeup *** //
-void time_wakeup_mutex(std::uint32_t waiting_in_us);  
-void time_wakeup_pmutex(std::uint32_t waiting_in_us);  
-void time_wakeup_semaphore(std::uint32_t waiting_in_us);  
-void time_wakeup_condvar(std::uint32_t waiting_in_us);
-void time_wakeup_promfut(std::uint32_t waiting_in_us);
-void test_semaphore();
-
-// *** Threadpool *** //
-void test_threadpool();
+void test_promise_and_future(); 
+void test_jthread0(); 
+void test_jthread1(); 
 
 
+void test_coroutine();
+void test_coroutine_gen();
+void test_coroutine_pc();
 
 
 int main(int argc, char* argv[])
 {
+//  test_epoll();
 //  test_invocable();
 //  test_unlock_mutex_in_another_thread();
+//  test_jthread0();
+//  test_jthread1();
   
     // ******************* //
     // *** Time thread *** //
     // ******************* //
-/*  timer_resolution();                        //      14-15 ns
-    time_thread_create();                      //  5000-8000 ns
-    time_thread_created_by_async_call();       //  5000-8000 ns
-    time_mutex_lock_and_unlock();              //         20 ns
-    time_synchronization_with_atomic();        //     90-160 ns (for __builtin_ia32_pause) 
-                                               //    500-600 ns (for std::this_thread::yield) 
-    test_pthread_affinity_and_priority();      // 2000-20000 ns (for affinity)
-                                               // 1200- 1800 ns (for priority-RR)
-                                               // 1700- 2500 ns (for priority-IDLE)
-*/  
 
-    // ******************* //
-    // *** Time wakeup *** //
-    // ******************* //
-    constexpr std::uint32_t NumTest = 10000;
-//  for(std::uint32_t us : {0,10,100,1000,10000}) 
-    for(std::uint32_t us : {10})
-    {
-        sync_test<sync_futex>("futex", NumTest, us);                              // 1700 ns
-        sync_test<sync_mutex>("std mutex", NumTest, us);                          // 1700 ns
-        sync_test<sync_pmutex>("posix mutex", NumTest, us);                       // 1700 ns
-        sync_test<sync_pmutex2>("posix mutex2", NumTest, us);                     // ?
-    //  sync_test<sync_semaphore>("std semaphore", NumTest, us);                  // ?
-        sync_test<sync_psemaphore>("posix semaphore", NumTest, us);               // 1700 ns
-        sync_test<sync_condvar>("condition variable", NumTest, us);               // 2200 ns
-        sync_test<sync_promfut<NumTest>>("promise and future", NumTest, us);      // 2200 ns
-    }   
-//  test_semaphore();
-    test_threadpool(); 
+    test_coroutine();
+//  test_coroutine_gen();
+//  test_coroutine_pc();
 
 
     // ********************************************************************************************************* //
